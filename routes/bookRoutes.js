@@ -3,60 +3,59 @@ const router = express.Router();
 const Book = require('../models/Book');
 const { upload, cloudinary } = require('../config/db');
 
-// Fetch all books with search and filter
-router.get('/books', async (req, res) => {
+// Fetch all books with optional search and genre filter
+router.get('/', async (req, res) => {
   try {
     const { search, genre } = req.query;
     let query = {};
 
-    // If search query exists, filter by title or author
+    // Add search query for title or author
     if (search) {
-      query = {
-        $or: [
-          { title: { $regex: search, $options: 'i' } },  // Case-insensitive title search
-          { author: { $regex: search, $options: 'i' } }  // Case-insensitive author search
-        ]
-      };
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } }, // Case-insensitive title search
+        { author: { $regex: search, $options: 'i' } }, // Case-insensitive author search
+      ];
     }
 
-    // If genre is provided, filter by genre
+    // Add genre filter if provided
     if (genre) {
       query.genre = genre;
     }
 
     const books = await Book.find(query);
-    res.json(books);
+    res.status(200).json(books); // Respond with matching books
   } catch (error) {
-    console.error('Error fetching books:', error);
-    res.status(500).json({ message: 'Failed to fetch books', error: error.message || 'Unknown error' });
+    console.error('Error fetching books:', error.message);
+    res.status(500).json({ message: 'Failed to fetch books', error: error.message });
   }
 });
 
-// Fetch single book by ID
-router.get('/books/:id', async (req, res) => {
+// Fetch a single book by ID
+router.get('/:id', async (req, res) => {
   try {
     const book = await Book.findById(req.params.id);
+
     if (!book) {
-      console.warn(`Book not found for ID: ${req.params.id}`);
       return res.status(404).json({ message: 'Book not found' });
     }
-    res.json(book);
+
+    res.status(200).json(book);
   } catch (error) {
-    console.error('Error fetching book by ID:', error);
-    res.status(500).json({ message: 'Error fetching book details', error: error.message || 'Unknown error' });
+    console.error('Error fetching book by ID:', error.message);
+    res.status(500).json({ message: 'Error fetching book details', error: error.message });
   }
 });
 
-// Upload Book with Image to Cloudinary
-router.post('/books', upload.single('image'), async (req, res) => {
-  const { title, author, price, genre, summary } = req.body;
-
-  console.log('Incoming Request:', req.body);
-  console.log('Uploaded File:', req.file);
-
+// Add a new book with an optional image uploaded to Cloudinary
+router.post('/', upload.single('image'), async (req, res) => {
   try {
-    let imageUrl = '';
+    const { title, author, price, genre, summary } = req.body;
 
+    console.log('Incoming Request:', req.body);
+    console.log('Uploaded File:', req.file);
+
+    // Upload image to Cloudinary if provided
+    let imageUrl = '';
     if (req.file) {
       console.log('Uploading to Cloudinary...');
       const result = await cloudinary.uploader.upload(req.file.path, {
@@ -64,10 +63,9 @@ router.post('/books', upload.single('image'), async (req, res) => {
       });
       imageUrl = result.secure_url;
       console.log('Uploaded Image URL:', imageUrl);
-    } else {
-      console.warn('No image file provided in request.');
     }
 
+    // Create a new book document
     const newBook = new Book({
       title,
       author,
@@ -79,23 +77,25 @@ router.post('/books', upload.single('image'), async (req, res) => {
 
     const savedBook = await newBook.save();
     console.log('Book saved successfully:', savedBook);
-    res.status(201).json(savedBook);
+    res.status(201).json(savedBook); // Respond with the created book
   } catch (error) {
-    console.error('Upload Error:', error);
-    res.status(500).json({ message: 'Failed to save book', error: error.message || 'Unknown error' });
+    console.error('Error saving book:', error.message);
+    res.status(500).json({ message: 'Failed to save book', error: error.message });
   }
 });
 
-// Delete Book by ID
-router.delete('/books/:id', async (req, res) => {
+// Delete a book by ID
+router.delete('/:id', async (req, res) => {
   try {
     const deletedBook = await Book.findByIdAndDelete(req.params.id);
+
     if (!deletedBook) {
       return res.status(404).json({ message: 'Book not found' });
     }
-    res.json({ message: 'Book deleted successfully' });
+
+    res.status(200).json({ message: 'Book deleted successfully', book: deletedBook });
   } catch (error) {
-    console.error('Error deleting book:', error);
+    console.error('Error deleting book:', error.message);
     res.status(500).json({ message: 'Failed to delete book', error: error.message });
   }
 });
