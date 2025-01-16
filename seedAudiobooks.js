@@ -26,10 +26,10 @@ const audiobooks = [
     author: 'Paulo Coelho',
     price: 450,
     description: 'A spiritual journey of a shepherd boy pursuing his dreams.',
-    image: '/uploads/the-alchemist.jpg',
+    image: '/uploads/the_alchemist.jpg',
     chapters: [
-      { title: 'Prologue', audioSrc: '/uploads/alchemist-prologue.mp3' },
-      { title: 'Chapter 1', audioSrc: '/uploads/alchemist-ch1.mp3' },
+      { title: 'Introduction', audioSrc: '/audio/the_alchemist/chapter1.mp3' },
+      { title: 'Chapter 1', audioSrc: '/audio/the_alchemist/chapter2.mp3' },
     ],
   },
 ];
