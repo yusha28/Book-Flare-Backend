@@ -14,9 +14,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// **Place the static file serving middleware here**
-app.use('/audio', express.static(path.join(__dirname, 'audio'))); // Serve audio files
+// Static File Serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve image files
+app.use('/audio', express.static(path.join(__dirname, 'audio'))); // Serve audio files
 
 // Routes
 app.use('/api/books', bookRoutes); // Book-related routes

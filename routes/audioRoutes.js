@@ -6,6 +6,9 @@ const Audiobook = require('../models/Audiobook');
 router.get('/', async (req, res) => {
   try {
     const audiobooks = await Audiobook.find();
+    audiobooks.forEach((audiobook) => {
+      audiobook.image = `${req.protocol}://${req.get('host')}${audiobook.image}`;
+    });
     res.status(200).json(audiobooks);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching audiobooks', error });
@@ -21,11 +24,12 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Audiobook not found' });
     }
 
-    // Include logic for audio chapters if necessary
+    audiobook.image = `${req.protocol}://${req.get('host')}${audiobook.image}`;
+
     if (audiobook.chapters && audiobook.chapters.length > 0) {
       audiobook.chapters = audiobook.chapters.map((chapter) => ({
         title: chapter.title,
-        audioSrc: `${req.protocol}://${req.get('host')}${chapter.audioSrc}`, // Construct full audio URL
+        audioSrc: `${req.protocol}://${req.get('host')}${chapter.audioSrc}`,
       }));
     }
 
