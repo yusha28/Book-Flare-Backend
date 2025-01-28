@@ -20,7 +20,11 @@ router.post('/upload', protect, upload.single('image'), async (req, res) => {
   try {
     const { title, author, summary, condition, price, terms } = req.body;
 
-    // Create a new book object with the logged-in user's ID
+    // Validate required fields
+    if (!title || !author || !condition || !price) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
     const newBook = new ExchangeBook({
       title,
       author,
@@ -28,12 +32,11 @@ router.post('/upload', protect, upload.single('image'), async (req, res) => {
       condition,
       price,
       terms,
-      image: req.file.filename,
+      image: req.file ? req.file.filename : null, // Optional image upload
       userID: req.user.id, // Associate the book with the uploader's ID
       status: 'available', // Default status
     });
 
-    // Save the book to the database
     await newBook.save();
     res.status(201).json({ message: 'Book uploaded successfully', book: newBook });
   } catch (error) {
@@ -42,12 +45,12 @@ router.post('/upload', protect, upload.single('image'), async (req, res) => {
   }
 });
 
-// ** Fetch All Books for Exchange (excluding user's own books) **
+// ** Fetch All Books for Exchange **
 router.get('/', protect, async (req, res) => {
   try {
     const books = await ExchangeBook.find({
-      userID: { $ne: req.user.id }, // Exclude books uploaded by the logged-in user
-      status: 'available', // Fetch only available books
+      userID: { $ne: req.user.id },
+      status: 'available',
     });
     res.status(200).json(books);
   } catch (error) {
@@ -59,7 +62,7 @@ router.get('/', protect, async (req, res) => {
 // ** Fetch Books Uploaded by Logged-in User (My Exchange) **
 router.get('/my-books', protect, async (req, res) => {
   try {
-    const myBooks = await ExchangeBook.find({ userID: req.user.id }); // Fetch books by the logged-in user
+    const myBooks = await ExchangeBook.find({ userID: req.user.id });
     res.status(200).json(myBooks);
   } catch (error) {
     console.error('Error fetching user books:', error.message);
@@ -73,16 +76,17 @@ router.put('/edit/:id', protect, upload.single('image'), async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
-    // Include the updated image if provided
+    // Prevent modification of certain fields
+    delete updates.userID;
+
     if (req.file) {
-      updates.image = req.file.filename;
+      updates.image = req.file.filename; // Include updated image if provided
     }
 
-    // Find and update the book
     const updatedBook = await ExchangeBook.findOneAndUpdate(
-      { _id: id, userID: req.user.id }, // Ensure only the owner can edit
+      { _id: id, userID: req.user.id },
       updates,
-      { new: true } // Return the updated document
+      { new: true }
     );
 
     if (!updatedBook) {
@@ -101,13 +105,11 @@ router.patch('/mark-exchanged/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find the book and ensure it belongs to the logged-in user
     const book = await ExchangeBook.findOne({ _id: id, userID: req.user.id });
     if (!book) {
       return res.status(404).json({ message: 'Book not found or unauthorized access' });
     }
 
-    // Update the status of the book
     book.status = 'exchanged';
     await book.save();
 
@@ -123,13 +125,13 @@ router.delete('/delete/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find the book and ensure it belongs to the logged-in user
     const book = await ExchangeBook.findOneAndDelete({ _id: id, userID: req.user.id });
     if (!book) {
       return res.status(404).json({ message: 'Book not found or unauthorized access' });
     }
 
-    res.status(200).json({ message: 'Book deleted successfully', book });
+    const updatedBooks = await ExchangeBook.find({ userID: req.user.id }); // Return updated list
+    res.status(200).json({ message: 'Book deleted successfully', books: updatedBooks });
   } catch (error) {
     console.error('Error deleting book:', error.message);
     res.status(500).json({ message: 'Error deleting book', error });

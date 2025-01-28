@@ -3,10 +3,11 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const bookRoutes = require('./routes/bookRoutes');
 const audioRoutes = require('./routes/audioRoutes');
-const exchangeRoutes = require('./routes/exchangeRoutes'); // Import exchange routes
-const authRoutes = require('./routes/authRoutes'); // Import authentication routes
+const exchangeRoutes = require('./routes/exchangeRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -18,9 +19,21 @@ const app = express();
 app.use(express.json()); // Parse incoming JSON requests
 app.use(cors()); // Enable CORS for all origins
 
+// Ensure the uploads directory exists
+const uploadsPath = path.resolve(__dirname, 'uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath);
+}
+
+// Ensure the audio directory exists
+const audioPath = path.resolve(__dirname, 'audio');
+if (!fs.existsSync(audioPath)) {
+  fs.mkdirSync(audioPath);
+}
+
 // Static File Serving
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve image files
-app.use('/audio', express.static(path.join(__dirname, 'audio'))); // Serve audio files
+app.use('/uploads', express.static(uploadsPath)); // Serve image files
+app.use('/audio', express.static(audioPath)); // Serve audio files
 
 // API Routes
 app.use('/api/books', bookRoutes); // Book-related routes
@@ -49,6 +62,11 @@ mongoose
 app.use((err, req, res, next) => {
   console.error('Error:', err.message || err);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+});
+
+// Handle 404 Errors
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
 });
 
 // Start the Server

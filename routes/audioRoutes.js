@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 const Audiobook = require('../models/Audiobook');
 
@@ -6,8 +7,11 @@ const Audiobook = require('../models/Audiobook');
 router.get('/', async (req, res) => {
   try {
     const audiobooks = await Audiobook.find();
+    // Update image paths to include proper protocol and host
     audiobooks.forEach((audiobook) => {
-      audiobook.image = `${req.protocol}://${req.get('host')}${audiobook.image}`;
+      if (audiobook.image) {
+        audiobook.image = `${req.protocol}://${req.get('host')}/uploads/${path.basename(audiobook.image)}`;
+      }
     });
     res.status(200).json(audiobooks);
   } catch (error) {
@@ -24,12 +28,16 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Audiobook not found' });
     }
 
-    audiobook.image = `${req.protocol}://${req.get('host')}${audiobook.image}`;
+    // Update image path
+    if (audiobook.image) {
+      audiobook.image = `${req.protocol}://${req.get('host')}/uploads/${path.basename(audiobook.image)}`;
+    }
 
+    // Update chapter audio paths
     if (audiobook.chapters && audiobook.chapters.length > 0) {
       audiobook.chapters = audiobook.chapters.map((chapter) => ({
         title: chapter.title,
-        audioSrc: `${req.protocol}://${req.get('host')}${chapter.audioSrc}`,
+        audioSrc: `${req.protocol}://${req.get('host')}/uploads/${path.basename(chapter.audioSrc)}`,
       }));
     }
 
