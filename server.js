@@ -8,54 +8,44 @@ const bookRoutes = require('./routes/bookRoutes');
 const audioRoutes = require('./routes/audioRoutes');
 const exchangeRoutes = require('./routes/exchangeRoutes');
 const authRoutes = require('./routes/authRoutes');
+const esewaRoutes = require('./routes/esewaRoutes'); // ✅ Import eSewa routes
 
-// Load environment variables
+// ✅ Load environment variables at the top
 dotenv.config();
 
 // Initialize Express app
 const app = express();
 
 // Middleware
-app.use(express.json()); // Parse incoming JSON requests
-app.use(cors()); // Enable CORS for all origins
+app.use(express.json());
+app.use(cors());
 
-// Ensure the uploads directory exists
+// Ensure necessary directories exist
 const uploadsPath = path.resolve(__dirname, 'uploads');
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath);
-}
+if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath);
 
-// Ensure the audio directory exists
 const audioPath = path.resolve(__dirname, 'audio');
-if (!fs.existsSync(audioPath)) {
-  fs.mkdirSync(audioPath);
-}
+if (!fs.existsSync(audioPath)) fs.mkdirSync(audioPath);
 
 // Static File Serving
-app.use('/uploads', express.static(uploadsPath)); // Serve image files
-app.use('/audio', express.static(audioPath)); // Serve audio files
+app.use('/uploads', express.static(uploadsPath));
+app.use('/audio', express.static(audioPath));
 
 // API Routes
-app.use('/api/books', bookRoutes); // Book-related routes
-app.use('/api/audiobooks', audioRoutes); // Audiobooks-related routes
-app.use('/api/exchange', exchangeRoutes); // Book Exchange routes
-app.use('/api/auth', authRoutes); // Authentication routes
-
-// Default route for testing
-app.get('/', (req, res) => {
-  res.send('Welcome to the Book Exchange API');
-});
+app.use('/api/books', bookRoutes);
+app.use('/api/audiobooks', audioRoutes);
+app.use('/api/exchange', exchangeRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/esewa', esewaRoutes); // ✅ eSewa Payment routes
 
 // Database Connection
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log('MongoDB connected successfully'))
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => console.log('MongoDB connected successfully'))
   .catch((err) => {
     console.error('DB Connection Error:', err.message);
-    process.exit(1); // Exit the application if DB connection fails
+    process.exit(1);
   });
 
 // Global Error Handling Middleware
